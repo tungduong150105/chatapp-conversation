@@ -1,0 +1,100 @@
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: chatapp-rabbitmq
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - chatapp-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+  
+
+  redis:
+    image: redis:7
+    container_name: chatapp-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - chatapp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s    
+  
+  mongo:
+    image: mongo:7
+    container_name: chatapp-mongo
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - chatapp-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  chat-service:
+    build: 
+        context: .
+        dockerfile: services/chat-service/Dockerfile
+    container_name: chatapp-chat-service
+    ports:
+      - "${CHAT_SERVICE_PORT:-4000}:${CHAT_SERVICE_PORT:-4000}"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      CHAT_SERVICE_PORT: ${CHAT_SERVICE_PORT:-4000}
+      MONGO_URL: mongodb://root:password@mongo:27017/chatapp_chat_service?authSource=admin
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - chatapp-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:${CHAT_SERVICE_PORT:-4000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  redis-data:
+  rabbitmq-data:
+
+
+networks:
+  chatapp-network:
+    name: chatapp-network
+    driver: bridge
