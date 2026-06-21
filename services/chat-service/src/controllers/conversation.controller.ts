@@ -64,7 +64,12 @@ export const createMessageHandler: RequestHandler = asyncHandler(async (req, res
   const user = getAuthenticatedUser(req);
   const conversationId = parsedConversation(req.params);
   const payload = createMessageBodySchema.parse(req.body);
-  const message = await messageService.createMessage(conversationId, user.id, payload.body);
+  const message = await messageService.createMessage(
+    conversationId,
+    user.id,
+    payload.body,
+    payload.attachments,
+  );
   res.status(201).json({ data: message });
 });
 

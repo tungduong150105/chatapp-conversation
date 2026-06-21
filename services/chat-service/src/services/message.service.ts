@@ -1,4 +1,4 @@
-import type { Message, MessageListOptions } from '@/types/message';
+import type { Message, MessageAttachment, MessageListOptions } from '@/types/message';
 
 import { attachReceiptStatuses } from '@/lib/message-receipts';
 import { messageReceiptRepository } from '@/repositories/message-receipt.repository';
@@ -10,8 +10,30 @@ import { HttpError, MESSAGE_CREATED_ROUTING_KEY } from '@chatapp/common';
 
 const BODY_PREVIEW_MAX = 500;
 
+const buildBodyPreview = (body: string, attachments?: MessageAttachment[]): string => {
+  const trimmed = body.trim();
+  if (trimmed.length > 0) {
+    return trimmed.length <= BODY_PREVIEW_MAX ? trimmed : `${trimmed.slice(0, BODY_PREVIEW_MAX)}…`;
+  }
+  if (attachments && attachments.length > 0) {
+    const first = attachments[0];
+    if (first.mimeType?.startsWith('image/')) {
+      return attachments.length > 1 ? `[${attachments.length} photos]` : '[Photo]';
+    }
+    return attachments.length > 1
+      ? `[${attachments.length} attachments]`
+      : `[${first.filename ?? 'Attachment'}]`;
+  }
+  return '';
+};
+
 export const messageService = {
-  async createMessage(conversationId: string, senderId: string, body: string): Promise<Message> {
+  async createMessage(
+    conversationId: string,
+    senderId: string,
+    body: string,
+    attachments?: MessageAttachment[],
+  ): Promise<Message> {
     // Ensure conversation exists before inserting the message
     const conversation = await conversationService.getConversationById(conversationId);
 
@@ -19,12 +41,18 @@ export const messageService = {
       throw new HttpError(403, 'Sender is not part of this conversation');
     }
 
-    const message = await messageRepository.create(conversationId, senderId, body);
-    await conversationService.touchConversation(conversationId, body.slice(0, 120), message.createdAt);
+    const normalizedBody = body.trim();
+    const message = await messageRepository.create(
+      conversationId,
+      senderId,
+      normalizedBody,
+      attachments,
+    );
+    const preview = buildBodyPreview(normalizedBody, attachments);
+    await conversationService.touchConversation(conversationId, preview.slice(0, 120), message.createdAt);
 
     const recipientUserIds = conversation.participantIds.filter((id) => id !== senderId);
-    const bodyPreview =
-      body.length <= BODY_PREVIEW_MAX ? body : `${body.slice(0, BODY_PREVIEW_MAX)}…`;
+    const bodyPreview = buildBodyPreview(normalizedBody, attachments);
 
     publishMessageCreated({
       type: MESSAGE_CREATED_ROUTING_KEY,

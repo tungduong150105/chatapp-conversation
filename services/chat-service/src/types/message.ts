@@ -1,5 +1,11 @@
 export type MessageReceiptStatus = 'sent' | 'delivered' | 'read';
 
+export interface MessageAttachment {
+  mediaId: string;
+  mimeType?: string;
+  filename?: string;
+}
+
 export interface Reaction {
   emoji: string;
   userId: string;
@@ -13,6 +19,7 @@ export interface Message {
   body: string;
   createdAt: Date;
   reactions: Reaction[];
+  attachments?: MessageAttachment[];
   /**
    * Outgoing only: sent (no `notifiedAt` on anyone) → delivered (≥1 notified, no reads) → read (≥1 read / seen).
    */

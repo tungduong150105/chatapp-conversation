@@ -2,17 +2,32 @@ import { randomUUID } from 'node:crypto';
 
 import { type WithId, type Document, ObjectId } from 'mongodb';
 
-import type { Message, MessageListOptions } from '@/types/message';
+import type { Message, MessageAttachment, MessageListOptions } from '@/types/message';
 
 import { getMongoClient } from '@/clients/mongo.client';
 
 const MESSAGES_COLLECTION = 'messages';
 
+const toAttachment = (raw: unknown): MessageAttachment | null => {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const o = raw as Record<string, unknown>;
+  if (typeof o.mediaId !== 'string') {
+    return null;
+  }
+  return {
+    mediaId: o.mediaId,
+    mimeType: typeof o.mimeType === 'string' ? o.mimeType : undefined,
+    filename: typeof o.filename === 'string' ? o.filename : undefined,
+  };
+};
+
 const toMessage = (doc: WithId<Document>): Message => ({
   id: String(doc._id),
   conversationId: String(doc.conversationId),
   senderId: String(doc.senderId),
-  body: String(doc.body),
+  body: String(doc.body ?? ''),
   createdAt: new Date(doc.createdAt as string | number | Date),
   reactions: Array.isArray(doc.reactions)
     ? doc.reactions.map((r: WithId<Document>) => ({
@@ -21,21 +36,32 @@ const toMessage = (doc: WithId<Document>): Message => ({
       createdAt: new Date(r.createdAt as string | number | Date),
     }))
     : [],
+  attachments: Array.isArray(doc.attachments)
+    ? doc.attachments.map(toAttachment).filter((a): a is MessageAttachment => a !== null)
+    : undefined,
 });
 
 export const messageRepository = {
-  async create(conversationId: string, senderId: string, body: string): Promise<Message> {
+  async create(
+    conversationId: string,
+    senderId: string,
+    body: string,
+    attachments?: MessageAttachment[],
+  ): Promise<Message> {
     const client = await getMongoClient();
     const db = client.db();
     const collection = db.collection(MESSAGES_COLLECTION);
     const now = new Date();
-    const document = {
+    const document: Record<string, unknown> = {
       _id: randomUUID(),
       conversationId,
       senderId,
       body,
       createdAt: now,
     };
+    if (attachments && attachments.length > 0) {
+      document.attachments = attachments;
+    }
 
     await collection.insertOne(document as unknown as Document);
 
