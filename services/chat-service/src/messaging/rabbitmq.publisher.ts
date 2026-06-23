@@ -3,7 +3,9 @@ import { logger } from '@/utils/logger';
 import {
   CONVERSATION_EVENTS_EXCHANGE,
   MESSAGE_CREATED_ROUTING_KEY,
+  MESSAGE_RECEIPT_UPDATED_ROUTING_KEY,
   type MessageCreatedEvent,
+  type MessageReceiptUpdatedEvent,
 } from '@chatapp/common';
 
 import { connect, type Channel, type ChannelModel } from 'amqplib';
@@ -26,22 +28,28 @@ export const startPublisher = async (): Promise<void> => {
   logger.info('RabbitMQ event publisher ready');
 };
 
-export const publishMessageCreated = (event: MessageCreatedEvent): void => {
+const publishConversationEvent = (routingKey: string, event: unknown, label: string): void => {
   if (!publishChannel || !env.ENABLE_EVENT_PUBLISH || !env.RABBITMQ_URL) {
     return;
   }
 
   try {
     const buf = Buffer.from(JSON.stringify(event), 'utf-8');
-    publishChannel.publish(
-      CONVERSATION_EVENTS_EXCHANGE,
-      MESSAGE_CREATED_ROUTING_KEY,
-      buf,
-      { persistent: true, contentType: 'application/json' },
-    );
+    publishChannel.publish(CONVERSATION_EVENTS_EXCHANGE, routingKey, buf, {
+      persistent: true,
+      contentType: 'application/json',
+    });
   } catch (error: unknown) {
-    logger.error({ err: error }, 'Failed to publish message.created event; message was still saved');
+    logger.error({ err: error }, `Failed to publish ${label} event`);
   }
+};
+
+export const publishMessageCreated = (event: MessageCreatedEvent): void => {
+  publishConversationEvent(MESSAGE_CREATED_ROUTING_KEY, event, 'message.created');
+};
+
+export const publishMessageReceiptUpdated = (event: MessageReceiptUpdatedEvent): void => {
+  publishConversationEvent(MESSAGE_RECEIPT_UPDATED_ROUTING_KEY, event, 'message.receipt.updated');
 };
 
 export const stopPublisher = async (): Promise<void> => {

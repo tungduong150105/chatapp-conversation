@@ -10,10 +10,28 @@ import { conversationCache } from '@/cache/conversation.cache';
 import { conversationRepository } from '@/repositories/conversation.repository';
 
 export const conversationService = {
-  async createConversation(input: CreateConversationInput): Promise<Conversation> {
-    const conversation = await conversationRepository.create(input);
+  async createConversation(input: CreateConversationInput): Promise<{ conversation: Conversation; created: boolean }> {
+    const type = input.type ?? (input.participantIds.length === 2 ? 'direct' : 'group');
+
+    if (type === 'direct' && input.participantIds.length === 2) {
+      const result = await conversationRepository.findOrCreateDirect({
+        ...input,
+        type: 'direct',
+      });
+      await conversationCache.set(result.conversation);
+      return result;
+    }
+
+    if (type === 'group' && !input.title?.trim()) {
+      throw new HttpError(422, 'Group conversations require a title');
+    }
+
+    const conversation = await conversationRepository.create({
+      ...input,
+      type,
+    });
     await conversationCache.set(conversation);
-    return conversation;
+    return { conversation, created: true };
   },
 
   async getConversationById(id: string): Promise<Conversation> {

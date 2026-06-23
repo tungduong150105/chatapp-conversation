@@ -4,6 +4,7 @@ import { attachReceiptStatuses } from '@/lib/message-receipts';
 import { messageReceiptRepository } from '@/repositories/message-receipt.repository';
 import { messageRepository } from '@/repositories/message.repository';
 import { publishMessageCreated } from '@/messaging/rabbitmq.publisher';
+import { publishReceiptUpdates } from '@/messaging/publish-receipt-updates';
 import { conversationService } from '@/services/conversation.service';
 import { presenceRepository } from '@/repositories/presence.repository';
 import { HttpError, MESSAGE_CREATED_ROUTING_KEY } from '@chatapp/common';
@@ -124,6 +125,7 @@ export const messageService = {
     }
 
     await messageReceiptRepository.markDelivered(conversationId, viewerId, allowed);
+    await publishReceiptUpdates(conversationId, viewerId, allowed, 'delivered');
   },
 
   /**
@@ -157,6 +159,7 @@ export const messageService = {
     }
 
     await messageReceiptRepository.markNotified(conversationId, viewerId, allowed);
+    await publishReceiptUpdates(conversationId, viewerId, allowed, 'delivered');
   },
 
   async markMessagesRead(
@@ -186,6 +189,7 @@ export const messageService = {
     }
 
     await messageReceiptRepository.markRead(conversationId, viewerId, ids);
+    await publishReceiptUpdates(conversationId, viewerId, ids, 'read');
   },
 
   /**
@@ -220,6 +224,9 @@ export const messageService = {
     await Promise.all(
       onlineIds.map((uid) => messageReceiptRepository.markNotified(conversationId, uid, [messageId])),
     );
+    await Promise.all(
+      onlineIds.map((uid) => publishReceiptUpdates(conversationId, uid, [messageId], 'delivered')),
+    );
   },
 
   /**
@@ -244,5 +251,6 @@ export const messageService = {
     }
 
     await messageReceiptRepository.markNotified(conversationId, recipientUserId, [messageId]);
+    await publishReceiptUpdates(conversationId, recipientUserId, [messageId], 'delivered');
   },
 };

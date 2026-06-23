@@ -15,6 +15,9 @@ export const getMongoClient = async (): Promise<MongoClient> => {
   await client.connect();
   logger.info('MongoDB connection established');
 
+  const { conversationRepository } = await import('@/repositories/conversation.repository');
+  await conversationRepository.ensureIndexes();
+
   return client;
 };
 

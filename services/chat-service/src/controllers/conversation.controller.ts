@@ -30,11 +30,20 @@ export const createConversationHandler: RequestHandler = asyncHandler(async (req
     throw new HttpError(400, 'Conversation must atleast include one other participant');
   }
 
-  const conversation = await conversationService.createConversation({
+  const inferredType =
+    payload.type ?? (uniqueParticipantIds.length === 2 ? 'direct' : 'group');
+
+  if (inferredType === 'group' && uniqueParticipantIds.length < 3) {
+    throw new HttpError(400, 'Group conversations require at least two other participants');
+  }
+
+  const { conversation, created } = await conversationService.createConversation({
+    type: inferredType,
     title: payload.title,
     participantIds: uniqueParticipantIds,
+    createdBy: user.id,
   });
-  res.status(201).json({ data: conversation });
+  res.status(created ? 201 : 200).json({ data: conversation });
 });
 
 export const listConversationHandler: RequestHandler = asyncHandler(async (req, res) => {

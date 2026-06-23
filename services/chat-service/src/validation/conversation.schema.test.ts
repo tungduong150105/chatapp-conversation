@@ -40,3 +40,13 @@ describe('listConversationsQuerySchema', () => {
     expect(parsed.participantId).toBeUndefined();
   });
 });
+
+describe('createConversationSchema group', () => {
+  it('requires title for group conversations', () => {
+    const result = createConversationSchema.safeParse({
+      type: 'group',
+      participantIds: ['550e8400-e29b-41d4-a716-446655440000'],
+    });
+    expect(result.success).toBe(false);
+  });
+});
