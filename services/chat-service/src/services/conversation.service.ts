@@ -8,10 +8,27 @@ import type {
 
 import { conversationCache } from '@/cache/conversation.cache';
 import { conversationRepository } from '@/repositories/conversation.repository';
+import { getUsersByIds } from '@/grpc/user-client';
+import { env } from '@/config/env';
+import { logger } from '@/utils/logger';
 
 export const conversationService = {
   async createConversation(input: CreateConversationInput): Promise<{ conversation: Conversation; created: boolean }> {
     const type = input.type ?? (input.participantIds.length === 2 ? 'direct' : 'group');
+
+    if (env.ENABLE_EVENT_PUBLISH) {
+      try {
+        const users = await getUsersByIds(input.participantIds);
+        const foundIds = new Set(users.map((u) => u.id));
+        const missing = input.participantIds.filter((id) => !foundIds.has(id));
+        if (missing.length > 0) {
+          throw new HttpError(404, `Users not found: ${missing.join(', ')}`);
+        }
+      } catch (err) {
+        if (err instanceof HttpError) throw err;
+        logger.warn({ err }, 'gRPC user validation failed — proceeding without validation');
+      }
+    }
 
     if (type === 'direct' && input.participantIds.length === 2) {
       const result = await conversationRepository.findOrCreateDirect({

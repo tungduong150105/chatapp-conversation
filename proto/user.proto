@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  // Look up a single user by ID
+  rpc GetUser (GetUserRequest) returns (UserResponse);
+
+  // Look up multiple users by IDs — used by Chat Service when creating a conversation
+  rpc GetUsersByIds (GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUsersByIdsRequest {
+  repeated string ids = 1;
+}
+
+message UserResponse {
+  string id          = 1;
+  string email       = 2;
+  string display_name = 3;
+  string created_at  = 4;
+  string updated_at  = 5;
+}
+
+message GetUsersByIdsResponse {
+  repeated UserResponse users = 1;
+}

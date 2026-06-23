@@ -24,6 +24,7 @@ FROM deps AS builder
 COPY tsconfig.base.json tsconfig.json ./
 COPY packages/common ./packages/common
 COPY services/chat-service ./services/chat-service
+COPY proto ./proto
 
 # Build common package first
 RUN npm run build --workspace=packages/common
@@ -54,6 +55,7 @@ RUN npm ci --omit=dev
 # Copy built artifacts from builder
 COPY --from=builder /app/packages/common/dist ./packages/common/dist
 COPY --from=builder /app/services/chat-service/dist ./services/chat-service/dist
+COPY --from=builder /app/proto ./proto
 
 # Change ownership to non-root
 RUN chown -R nodeuser:nodejs /app

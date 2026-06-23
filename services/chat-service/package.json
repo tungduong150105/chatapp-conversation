@@ -22,6 +22,8 @@
   "license": "ISC",
   "dependencies": {
     "@chatapp/common": "file:../../packages/common",
+    "@grpc/grpc-js": "^1.13.4",
+    "@grpc/proto-loader": "^0.7.15",
     "amqplib": "^0.10.9",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

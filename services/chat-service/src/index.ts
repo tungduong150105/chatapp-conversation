@@ -6,6 +6,7 @@ import { closeMongoClient, getMongoClient } from '@/clients/mongo.client';
 import { closeRedis, connectRedis } from '@/clients/redis.client';
 import { startConsumers, stopConsumers } from '@/messaging/rabbitmq.consumer';
 import { startPublisher, stopPublisher } from '@/messaging/rabbitmq.publisher';
+import { startSagaConsumer, stopSagaConsumer } from '@/messaging/saga.consumer';
 
 const main = async () => {
   try {
@@ -14,6 +15,7 @@ const main = async () => {
       connectRedis(),
       startConsumers(),
       startPublisher(),
+      startSagaConsumer(),
     ]);
 
     const app = createApp();
@@ -27,7 +29,7 @@ const main = async () => {
 
     const shutdown = () => {
       logger.info('Shutting down chat service...');
-      Promise.all([stopConsumers(), stopPublisher(), closeRedis(), closeMongoClient()])
+      Promise.all([stopConsumers(), stopPublisher(), stopSagaConsumer(), closeRedis(), closeMongoClient()])
         .catch((error: unknown) => {
           logger.error({ error }, 'Error during shutdown tasks');
         })
