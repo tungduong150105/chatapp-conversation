@@ -64,6 +64,7 @@ export const messageService = {
         senderId: message.senderId,
         bodyPreview,
         recipientUserIds,
+        sagaId: message.id, // sagaId == messageId for the send-message saga
       },
     });
 

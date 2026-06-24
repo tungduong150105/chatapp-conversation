@@ -41,7 +41,17 @@ const toMessage = (doc: WithId<Document>): Message => ({
     : undefined,
 });
 
+export type SagaStatus = 'pending' | 'notified' | 'delivered' | 'failed';
+
 export const messageRepository = {
+  async updateSagaStatus(messageId: string, status: SagaStatus): Promise<void> {
+    const client = await getMongoClient();
+    await client.db().collection(MESSAGES_COLLECTION).updateOne(
+      { _id: messageId } as unknown as Document,
+      { $set: { sagaStatus: status, sagaUpdatedAt: new Date() } },
+    );
+  },
+
   async create(
     conversationId: string,
     senderId: string,

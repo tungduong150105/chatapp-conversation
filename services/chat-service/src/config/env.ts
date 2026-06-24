@@ -19,6 +19,8 @@ const envSchema = z.object({
     }),
   INTERNAL_API_TOKEN: z.string().min(16),
   JWT_SECRET: z.string().min(32),
+  // gRPC endpoint of User Service (host:port)
+  USER_SERVICE_GRPC_URL: z.string().default('localhost:50051'),
 });
 
 type EnvType = z.infer<typeof envSchema>;
