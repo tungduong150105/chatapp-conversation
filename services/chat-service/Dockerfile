@@ -64,9 +64,11 @@ USER nodeuser
 
 ENV NODE_ENV=production
 ENV CHAT_SERVICE_PORT=4002
+ENV OTEL_SERVICE_NAME=chat-service
 
 EXPOSE 4002
+EXPOSE 9464
 
 WORKDIR /app/services/chat-service
 
-CMD [ "node", "dist/index.js" ]
+CMD [ "node", "--import", "./dist/tracing.js", "dist/index.js" ]

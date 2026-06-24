@@ -23,6 +23,11 @@
   "dependencies": {
     "@chatapp/common": "file:../../packages/common",
     "@grpc/grpc-js": "^1.13.4",
+    "@opentelemetry/auto-instrumentations-node": "^0.56.0",
+    "@opentelemetry/exporter-prometheus": "^0.57.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@opentelemetry/resources": "^1.30.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
     "@grpc/proto-loader": "^0.7.15",
     "amqplib": "^0.10.9",
     "cors": "^2.8.5",
