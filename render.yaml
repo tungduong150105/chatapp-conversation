@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: chatapp-chat-service
+    env: docker
+    dockerfilePath: ./services/chat-service/Dockerfile
+    dockerContext: .
+    branch: main
+    healthCheckPath: /health
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CHAT_SERVICE_PORT
+        value: "4002"
+      - key: MONGO_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+      - key: INTERNAL_API_TOKEN
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ENABLE_EVENT_PUBLISH
+        value: "true"
+      - key: USER_SERVICE_GRPC_URL
+        sync: false
