@@ -8,8 +8,8 @@ import { logger } from '@/utils/logger';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Works for both dev (src/grpc/) and prod (dist/grpc/)
-const PROTO_PATH = path.resolve(__dirname, '../../../proto/user.proto');
+// Works for both dev (src/grpc/) and prod (dist/grpc/): go up 4 levels to repo root
+const PROTO_PATH = path.resolve(__dirname, '../../../../proto/user.proto');
 
 const packageDef = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,

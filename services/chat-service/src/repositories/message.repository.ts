@@ -44,14 +44,6 @@ const toMessage = (doc: WithId<Document>): Message => ({
 export type SagaStatus = 'pending' | 'notified' | 'delivered' | 'failed';
 
 export const messageRepository = {
-<<<<<<< HEAD
-  async create(
-    conversationId: string,
-    senderId: string,
-    body: string,
-    attachments?: MessageAttachment[],
-  ): Promise<Message> {
-=======
   async updateSagaStatus(messageId: string, status: SagaStatus): Promise<void> {
     const client = await getMongoClient();
     await client.db().collection(MESSAGES_COLLECTION).updateOne(
@@ -60,9 +52,12 @@ export const messageRepository = {
     );
   },
 
-  async create(conversationId: string, senderId: string, body: string): Promise<Message> {
->>>>>>> 3134bd3 (feat(chat): add gRPC client, Saga choreography, and CI/CD pipeline
-)
+  async create(
+    conversationId: string,
+    senderId: string,
+    body: string,
+    attachments?: MessageAttachment[],
+  ): Promise<Message> {
     const client = await getMongoClient();
     const db = client.db();
     const collection = db.collection(MESSAGES_COLLECTION);
