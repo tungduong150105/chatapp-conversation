@@ -57,20 +57,24 @@ services:
       start_period: 30s
 
   chat-service:
-    build: 
+    build:
         context: .
         dockerfile: services/chat-service/Dockerfile
     container_name: chatapp-chat-service
     ports:
-      - "${CHAT_SERVICE_PORT:-4000}:${CHAT_SERVICE_PORT:-4000}"
+      - "${CHAT_SERVICE_PORT:-4002}:${CHAT_SERVICE_PORT:-4002}"
+      - "9466:9464"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      CHAT_SERVICE_PORT: ${CHAT_SERVICE_PORT:-4000}
+      CHAT_SERVICE_PORT: ${CHAT_SERVICE_PORT:-4002}
       MONGO_URL: mongodb://root:password@mongo:27017/chatapp_chat_service?authSource=admin
       REDIS_URL: redis://redis:6379
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
       JWT_SECRET: ${JWT_SECRET}
+      OTEL_SERVICE_NAME: chat-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4318/v1/traces}
+      OTEL_METRICS_PORT: 9464
     depends_on:
       mongo:
         condition: service_healthy
